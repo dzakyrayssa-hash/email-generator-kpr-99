@@ -12,15 +12,15 @@ from google.oauth2.service_account import Credentials
 st.set_page_config(page_title="KPR Sheet Automation", layout="wide")
 
 
-st.markdown(
-    """
+st.markdown("""
 <style>
-    textarea { font-size: 16px !important; line-height: 1.5 !important; }
-    input { font-size: 16px !important; }
+#MainMenu {visibility:hidden;}
+footer {visibility:hidden;}
 </style>
-""",
-    unsafe_allow_html=True,
-)
+""", unsafe_allow_html=True)
+
+st.image("logo_99.png", width=120)
+
 
 st.title("Email Automation System")
 st.write(
