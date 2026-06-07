@@ -14,8 +14,35 @@ st.set_page_config(page_title="KPR Sheet Automation", layout="wide")
 
 st.markdown("""
 <style>
+
+/* Hide Streamlit UI */
 #MainMenu {visibility:hidden;}
 footer {visibility:hidden;}
+header {visibility:hidden;}
+
+[data-testid="stToolbar"] {
+    display:none;
+}
+
+[data-testid="stDecoration"] {
+    display:none;
+}
+
+/* Rapihin jarak atas */
+.block-container {
+    padding-top: 2rem;
+}
+
+/* Font input */
+textarea {
+    font-size:16px !important;
+    line-height:1.5 !important;
+}
+
+input {
+    font-size:16px !important;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
