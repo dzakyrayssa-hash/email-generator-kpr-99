@@ -324,24 +324,28 @@ def ensure_dataframe_columns(df, columns):
     return normalized[columns]
 
 
-def load_settings_data(ws_settings):
-    try:
-        records = ws_settings.get_all_records()
-        df = pd.DataFrame(records) if records else pd.DataFrame(columns=SETTINGS_COLUMNS)
-        return ensure_dataframe_columns(df, SETTINGS_COLUMNS)
-    except Exception as exc:
-        st.warning(f"Gagal membaca sheet pengaturan. Detail: {exc}")
-        return pd.DataFrame(columns=SETTINGS_COLUMNS)
+@st.cache_data(ttl=300)
+def load_settings_data(_worksheet_name):
+    config = get_runtime_config()
+    client = get_gspread_client()
+    spreadsheet = client.open_by_key(config["log_spreadsheet_id"])
+    ws = spreadsheet.worksheet(SETTINGS_WORKSHEET_NAME)
+
+    records = ws.get_all_records()
+    df = pd.DataFrame(records) if records else pd.DataFrame(columns=SETTINGS_COLUMNS)
+    return ensure_dataframe_columns(df, SETTINGS_COLUMNS)
 
 
-def load_log_data(ws_log):
-    try:
-        records = ws_log.get_all_records()
-        df = pd.DataFrame(records) if records else pd.DataFrame(columns=LOG_COLUMNS)
-        return ensure_dataframe_columns(df, LOG_COLUMNS)
-    except Exception as exc:
-        st.warning(f"Gagal membaca sheet log. Detail: {exc}")
-        return pd.DataFrame(columns=LOG_COLUMNS)
+@st.cache_data(ttl=300)
+def load_log_data(_worksheet_name):
+    config = get_runtime_config()
+    client = get_gspread_client()
+    spreadsheet = client.open_by_key(config["log_spreadsheet_id"])
+    ws = spreadsheet.worksheet(LOG_WORKSHEET_NAME)
+
+    records = ws.get_all_records()
+    df = pd.DataFrame(records) if records else pd.DataFrame(columns=LOG_COLUMNS)
+    return ensure_dataframe_columns(df, LOG_COLUMNS)
 
 
 def find_first_matching_column(columns, exact_names=None, contains_keywords=None):
@@ -762,6 +766,8 @@ try:
 except Exception as exc:
     show_blocking_error(f"Gagal mengambil data utama dari Google Sheets. Detail: {exc}")
 
+
+
 ws_log = None
 ws_settings = None
 df_log = pd.DataFrame(columns=LOG_COLUMNS)
@@ -769,8 +775,10 @@ df_settings = pd.DataFrame(columns=SETTINGS_COLUMNS)
 
 try:
     ws_log, ws_settings = init_support_sheets()
-    df_log = load_log_data(ws_log)
-    df_settings = load_settings_data(ws_settings)
+
+    df_log = load_log_data("log")
+    df_settings = load_settings_data("settings")
+
 except Exception as exc:
     st.warning(
         "Sheet log/pengaturan tidak bisa diakses sekarang. "
