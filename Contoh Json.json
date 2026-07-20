@@ -1,0 +1,132 @@
+{
+  "export_info": {
+    "timestamp": "2026-06-10T11:30:24+07:00",
+    "total_chats_exported": 3,
+    "filtered_by": "All Chats",
+    "exported_by": "dzaky@99.co"
+  },
+  "data": [
+    {
+      "lead_metadata": {
+        "lead_id": "LD-8831-RYAN",
+        "lead_name": "Ryan Dharma",
+        "phone_number": "628179922392",
+        "agent_name": "Valdi",
+        "stage": "Submit Prescreen",
+        "kpr_type": "Takeover",
+        "est_pengajuan_plafond": 235521573,
+        "lokasi_properti": "Bogor",
+        "source_section": "Paid Ads"
+      },
+      "chat_history": [
+        {
+          "message_id": "550e8400-e29b-41d4-a716-446655440011",
+          "lead_id": "LD-8831-RYAN",
+          "timestamp": "2026-06-04T10:45:00+07:00",
+          "sender_role": "lead",
+          "message": "sudah melakukan survey ke beberapa platform online lain"
+        },
+        {
+          "message_id": "550e8400-e29b-41d4-a716-446655440012",
+          "lead_id": "LD-8831-RYAN",
+          "timestamp": "2026-06-04T10:47:00+07:00",
+          "sender_role": "agent",
+          "message": "baik, sudah dihubungkan ke bank rekanan platform tersebut tidak pak? jika sudah, ke bank apa saja direkomendasikannya? agar kami tidak merekomendasikan bank yang sama"
+        },
+        {
+          "message_id": "550e8400-e29b-41d4-a716-446655440013",
+          "lead_id": "LD-8831-RYAN",
+          "timestamp": "2026-06-04T10:49:00+07:00",
+          "sender_role": "lead",
+          "message": "sudah di follow ke beberapa bank, seperti UOB, BSI, Permata"
+        },
+        {
+          "message_id": "550e8400-e29b-41d4-a716-446655440014",
+          "lead_id": "LD-8831-RYAN",
+          "timestamp": "2026-06-04T10:50:00+07:00",
+          "sender_role": "agent",
+          "message": "baik, di bank tersebut prosesnya sudah sampai mana semuanya pak kalau boleh tau?"
+        },
+        {
+          "message_id": "550e8400-e29b-41d4-a716-446655440015",
+          "lead_id": "LD-8831-RYAN",
+          "timestamp": "2026-06-04T10:51:00+07:00",
+          "sender_role": "agent",
+          "message": "sudah kirim dokumen semua atau baru simulasi saja?"
+        },
+        {
+          "message_id": "550e8400-e29b-41d4-a716-446655440016",
+          "lead_id": "LD-8831-RYAN",
+          "timestamp": "2026-06-04T10:59:00+07:00",
+          "sender_role": "lead",
+          "message": "baru simulasi aja"
+        },
+        {
+          "message_id": "550e8400-e29b-41d4-a716-446655440017",
+          "lead_id": "LD-8831-RYAN",
+          "timestamp": "2026-06-04T11:01:00+07:00",
+          "sender_role": "agent",
+          "message": "baik pak, terima kasih atas informasi yang telah diberikan. kami akan lakukan analisa terlebih dahulu, jika sudah. akan kami teruskan informasi tersebut ke bank rekanan kami. pihak bank akan"
+        }
+      ]
+    },
+    {
+      "lead_metadata": {
+        "lead_id": "LD-9204-SPTA",
+        "lead_name": "Pak Sapta",
+        "phone_number": "6287764443047",
+        "agent_name": "Lia",
+        "stage": "Prospect",
+        "kpr_type": "Takeover",
+        "est_pengajuan_plafond": 367000000,
+        "lokasi_properti": "Sumedang",
+        "source_section": "Paid Ads"
+      },
+      "chat_history": [
+        {
+          "message_id": "550e8400-e29b-41d4-a716-446655440018",
+          "lead_id": "LD-9204-SPTA",
+          "timestamp": "2026-06-04T11:13:00+07:00",
+          "sender_role": "agent",
+          "message": "Siang pak/bu, perkenalkan saya Lia dari 99 KPR. Terkait pengajuan Takeover KPR-nya, apakah Bapak sudah menyiapkan dokumen mutasi rekening?"
+        },
+        {
+          "message_id": "550e8400-e29b-41d4-a716-446655440019",
+          "lead_id": "LD-9204-SPTA",
+          "timestamp": "2026-06-04T11:15:00+07:00",
+          "sender_role": "lead",
+          "message": "Lupa lagi saya bu"
+        }
+      ]
+    },
+    {
+      "lead_metadata": {
+        "lead_id": "LD-7742-NKHA",
+        "lead_name": "Niekha Zoelienna",
+        "phone_number": "6285123456789",
+        "agent_name": "Valdi",
+        "stage": "Prospect",
+        "kpr_type": "New KPR",
+        "est_pengajuan_plafond": 500000000,
+        "lokasi_properti": "Jakarta",
+        "source_section": "Organic"
+      },
+      "chat_history": [
+        {
+          "message_id": "550e8400-e29b-41d4-a716-446655440020",
+          "lead_id": "LD-7742-NKHA",
+          "timestamp": "2026-06-04T10:55:00+07:00",
+          "sender_role": "lead",
+          "message": "Siang mas Valdi, untuk form aplikasinya sudah saya isi dan submit via link ya."
+        },
+        {
+          "message_id": "550e8400-e29b-41d4-a716-446655440021",
+          "lead_id": "LD-7742-NKHA",
+          "timestamp": "2026-06-04T11:03:00+07:00",
+          "sender_role": "agent",
+          "message": "Baik. Terima kasih.."
+        }
+      ]
+    }
+  ]
+}
