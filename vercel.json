@@ -1,4 +1,5 @@
 {
+  "name": "email-generator-kpr-99",
   "rewrites": [
     {
       "source": "/api/(.*)",

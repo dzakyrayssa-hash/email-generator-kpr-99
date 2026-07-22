@@ -8,3 +8,5 @@ kpr-automation-*.json
 node_modules/
 dist/
 .env
+
+.vercel
