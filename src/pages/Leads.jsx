@@ -50,9 +50,10 @@ export default function Leads() {
 
   const fetchData = () => {
     setLoading(true);
+    const headers = { 'Authorization': 'Bearer ' + localStorage.getItem('kpr_auth_token') };
     Promise.all([
-      fetch('/api/leads').then(res => res.json()),
-      fetch('/api/settings').then(res => res.json())
+      fetch('/api/leads', { headers }).then(res => res.json()),
+      fetch('/api/settings', { headers }).then(res => res.json())
     ]).then(([leadsData, settingsData]) => {
       if (leadsData.status === 'success') setLeads(leadsData.data);
       if (settingsData.status === 'success') setSettings(settingsData.data);
@@ -256,7 +257,10 @@ export default function Leads() {
     setSending(true);
     fetch('/api/logs', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + localStorage.getItem('kpr_auth_token')
+      },
       body: JSON.stringify({
         transaction_id: selectedLead.id,
         source_row: selectedLead.row_number,

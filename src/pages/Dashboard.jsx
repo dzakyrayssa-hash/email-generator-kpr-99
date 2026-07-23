@@ -15,7 +15,9 @@ export default function Dashboard() {
   const [selectedEmail, setSelectedEmail] = useState(null);
 
   useEffect(() => {
-    fetch('/api/logs')
+    fetch('/api/logs', {
+      headers: { 'Authorization': 'Bearer ' + localStorage.getItem('kpr_auth_token') }
+    })
       .then(res => res.json())
       .then(data => {
         if (data.status === 'success') {

@@ -22,7 +22,9 @@ export default function Settings({ title, category }) {
 
   const fetchSettings = () => {
     setLoading(true);
-    fetch('/api/settings')
+    fetch('/api/settings', {
+      headers: { 'Authorization': 'Bearer ' + localStorage.getItem('kpr_auth_token') }
+    })
       .then(res => res.json())
       .then(data => {
         if (data.status === 'success') {
@@ -48,7 +50,10 @@ export default function Settings({ title, category }) {
 
     fetch(url, {
       method: method,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + localStorage.getItem('kpr_auth_token')
+      },
       body: JSON.stringify({ kategori: kat, nama: finalNama, isi })
     })
     .then(res => res.json())

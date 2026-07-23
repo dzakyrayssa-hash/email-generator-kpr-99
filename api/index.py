@@ -212,6 +212,8 @@ def build_bank_entity_map(df, bank_col, payment_account_col):
 
 # ----------------- API Endpoints ----------------- #
 
+from fastapi import Header
+
 class AuthRequest(BaseModel):
     password: str
 
@@ -219,15 +221,25 @@ class AuthRequest(BaseModel):
 def authenticate(request: AuthRequest):
     configured_password = get_config_value("APP_PASSWORD", "")
     if not configured_password or request.password == configured_password:
-        return {"status": "success", "token": "dummy-token-for-now"}
+        return {"status": "success", "token": request.password}
     raise HTTPException(status_code=401, detail="Password salah")
 
-@app.get("/api/config")
+def verify_token(authorization: str = Header(None)):
+    configured_password = get_config_value("APP_PASSWORD", "")
+    if not configured_password:
+        return True
+    
+    if authorization == f"Bearer {configured_password}":
+        return True
+    
+    raise HTTPException(status_code=401, detail="Unauthorized")
+
+@app.get("/api/config", dependencies=[Depends(verify_token)])
 def get_config():
     config = get_runtime_config()
     return {"status": "success", "config": config}
 
-@app.get("/api/leads")
+@app.get("/api/leads", dependencies=[Depends(verify_token)])
 def get_leads():
     try:
         config = get_runtime_config()
@@ -289,7 +301,7 @@ def get_leads():
         print(f"Error fetching leads: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/logs")
+@app.get("/api/logs", dependencies=[Depends(verify_token)])
 def get_logs():
     try:
         config = get_runtime_config()
@@ -314,7 +326,7 @@ class LogEvent(BaseModel):
     catatan: str = ""
     isi_email: str = ""
 
-@app.post("/api/logs")
+@app.post("/api/logs", dependencies=[Depends(verify_token)])
 def append_log(event: LogEvent):
     try:
         config = get_runtime_config()
@@ -341,7 +353,7 @@ def append_log(event: LogEvent):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/api/settings")
+@app.get("/api/settings", dependencies=[Depends(verify_token)])
 def get_settings():
     try:
         config = get_runtime_config()
@@ -360,7 +372,7 @@ class SettingEvent(BaseModel):
     nama: str
     isi: str
 
-@app.post("/api/settings")
+@app.post("/api/settings", dependencies=[Depends(verify_token)])
 def append_setting(setting: SettingEvent):
     try:
         config = get_runtime_config()
@@ -375,7 +387,7 @@ def append_setting(setting: SettingEvent):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.put("/api/settings/{row_number}")
+@app.put("/api/settings/{row_number}", dependencies=[Depends(verify_token)])
 def update_setting(row_number: int, setting: SettingEvent):
     try:
         config = get_runtime_config()
@@ -395,7 +407,7 @@ class SendEmailRequest(BaseModel):
     subject: str
     body: str
 
-@app.post("/api/email/send")
+@app.post("/api/email/send", dependencies=[Depends(verify_token)])
 def send_email(request: SendEmailRequest):
     # This requires Domain-Wide Delegation or specific user credentials, 
     # but service accounts can send emails if configured.

@@ -37,7 +37,7 @@ export default function Login({ onLogin }) {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      background: 'linear-gradient(135deg, #f0ecfc 0%, #c797eb 100%)',
+      background: 'linear-gradient(135deg, #fff3e0 0%, #ffcc80 100%)',
       padding: '20px'
     }}>
       <div className="card" style={{
@@ -47,24 +47,28 @@ export default function Login({ onLogin }) {
         textAlign: 'center',
         boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
         border: '1px solid rgba(255, 255, 255, 0.5)',
-        background: 'rgba(255, 255, 255, 0.9)',
+        background: 'rgba(255, 255, 255, 0.95)',
         backdropFilter: 'blur(10px)'
       }}>
         <div style={{
-          width: '64px',
-          height: '64px',
-          background: '#6338f0',
+          width: '72px',
+          height: '72px',
+          background: '#ff5924',
           borderRadius: '16px',
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
           margin: '0 auto 24px',
-          boxShadow: '0 4px 14px 0 rgba(99, 56, 240, 0.39)'
+          boxShadow: '0 4px 14px 0 rgba(255, 89, 36, 0.39)',
+          color: 'white',
+          fontWeight: '900',
+          fontSize: '22px',
+          fontFamily: 'system-ui, sans-serif',
+          lineHeight: '1'
         }}>
-          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-          </svg>
+          99
+          <span style={{ fontSize: '12px', fontWeight: '600' }}>.co</span>
         </div>
         
         <h1 style={{ margin: '0 0 8px', fontSize: '24px', color: '#111827', fontWeight: '700' }}>
@@ -96,9 +100,15 @@ export default function Login({ onLogin }) {
 
           <button 
             type="submit" 
-            className="btn btn-primary" 
             disabled={loading || !password}
-            style={{ width: '100%', padding: '14px', fontSize: '16px', fontWeight: '600', marginTop: '8px' }}
+            style={{ 
+              width: '100%', padding: '14px', fontSize: '16px', fontWeight: '600', marginTop: '8px',
+              backgroundColor: '#ff5924', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer',
+              opacity: (loading || !password) ? 0.7 : 1,
+              transition: 'background-color 0.2s'
+            }}
+            onMouseEnter={(e) => !loading && password && (e.target.style.backgroundColor = '#e04a1c')}
+            onMouseLeave={(e) => (e.target.style.backgroundColor = '#ff5924')}
           >
             {loading ? 'Memeriksa...' : 'Masuk Sekarang'}
           </button>
