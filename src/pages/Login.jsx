@@ -37,7 +37,7 @@ export default function Login({ onLogin }) {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      background: 'linear-gradient(135deg, #fff3e0 0%, #ffcc80 100%)',
+      background: 'linear-gradient(135deg, #e0e7ff 0%, #bfdbfe 100%)',
       padding: '20px'
     }}>
       <div className="card" style={{
@@ -53,14 +53,14 @@ export default function Login({ onLogin }) {
         <div style={{
           width: '72px',
           height: '72px',
-          background: '#ff5924',
+          background: '#2b70f0',
           borderRadius: '16px',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
           margin: '0 auto 24px',
-          boxShadow: '0 4px 14px 0 rgba(255, 89, 36, 0.39)',
+          boxShadow: '0 4px 14px 0 rgba(43, 112, 240, 0.39)',
           color: 'white',
           fontWeight: '900',
           fontSize: '22px',
@@ -103,12 +103,12 @@ export default function Login({ onLogin }) {
             disabled={loading || !password}
             style={{ 
               width: '100%', padding: '14px', fontSize: '16px', fontWeight: '600', marginTop: '8px',
-              backgroundColor: '#ff5924', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer',
+              backgroundColor: '#2b70f0', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer',
               opacity: (loading || !password) ? 0.7 : 1,
               transition: 'background-color 0.2s'
             }}
-            onMouseEnter={(e) => !loading && password && (e.target.style.backgroundColor = '#e04a1c')}
-            onMouseLeave={(e) => (e.target.style.backgroundColor = '#ff5924')}
+            onMouseEnter={(e) => !loading && password && (e.target.style.backgroundColor = '#1e5adb')}
+            onMouseLeave={(e) => (e.target.style.backgroundColor = '#2b70f0')}
           >
             {loading ? 'Memeriksa...' : 'Masuk Sekarang'}
           </button>
