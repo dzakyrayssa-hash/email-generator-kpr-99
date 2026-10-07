@@ -61,11 +61,17 @@ export default function Leads() {
     setLoading(true);
     const headers = { 'Authorization': 'Bearer ' + localStorage.getItem('kpr_auth_token') };
     Promise.all([
-      fetch('/api/leads', { headers }).then(res => res.json()),
+      fetch('/api/leads', { headers }).then(res => {
+        if (res.status === 401) {
+          localStorage.removeItem('kpr_auth_token');
+          window.location.reload();
+        }
+        return res.json();
+      }),
       fetch('/api/settings', { headers }).then(res => res.json())
     ]).then(([leadsData, settingsData]) => {
-      if (leadsData.status === 'success') setLeads(leadsData.data);
-      if (settingsData.status === 'success') setSettings(settingsData.data);
+      if (leadsData && leadsData.status === 'success') setLeads(leadsData.data);
+      if (settingsData && settingsData.status === 'success') setSettings(settingsData.data);
     }).finally(() => setLoading(false));
   };
 
