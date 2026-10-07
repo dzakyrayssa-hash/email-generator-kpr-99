@@ -75,6 +75,8 @@ AUTHORITATIVE_BANK_ENTITY_MAP = {
     "Mandiri": "WMI",
     "KB": "WMI",
     "CIMB Syariah": "WMI",
+    "BTN": "WMI",
+    "BTN Syariah": "WMI",
 }
 BANK_ENTITY_FALLBACK = {"Lainnya": "WMI"}
 BANK_DISPLAY_ALIASES = {
@@ -83,6 +85,7 @@ BANK_DISPLAY_ALIASES = {
     "KB BUKOPIN": "KB",
     "OCBC NISP": "OCBC",
     "BSI JATIM": "BSI Jawa Timur",
+    "BANK BTN": "BTN",
 }
 EMAIL_BANK_KEYWORDS = {
     "OCBC": ["ocbc"],
@@ -100,6 +103,8 @@ EMAIL_BANK_KEYWORDS = {
     "Mandiri": ["mandiri"],
     "KB": ["kbbank", "kbbank.co", "bukopin", "kb"],
     "CIMB Syariah": ["cimbsyariah"],
+    "BTN": ["btn", "bankbtn"],
+    "BTN Syariah": ["btnsyariah", "btn syariah", "btn"],
 }
 
 # ----------------- Helper Functions ----------------- #
