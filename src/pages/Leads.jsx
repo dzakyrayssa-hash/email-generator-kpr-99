@@ -14,13 +14,13 @@ export default function Leads() {
   const [selectedLeadId, setSelectedLeadId] = useState('');
   const [selectedLead, setSelectedLead] = useState(null);
 
-  // Salam & Penerima
+  // Salam & Penerima (Single Mode)
   const [waktuSalam, setWaktuSalam] = useState('Selamat pagi');
   const [panggilan, setPanggilan] = useState('Bapak');
   const [namaPenerima, setNamaPenerima] = useState('');
   const [bankTujuan, setBankTujuan] = useState('');
 
-  // Pengaturan Email
+  // Pengaturan Email (Single Mode)
   const [ddTo, setDdTo] = useState('');
   const [emailTo, setEmailTo] = useState('');
   const [ddFrom, setDdFrom] = useState('akun.kantor@99.co');
@@ -28,34 +28,40 @@ export default function Leads() {
   const [selectedCc, setSelectedCc] = useState([]);
   const [customCc, setCustomCc] = useState('');
 
-  // Tinjauan Data Otomatis
+  // Data Akad & Format (Single Mode)
   const [formatLaporan, setFormatLaporan] = useState('Vertikal Ke Bawah (Komplit)');
   const [namaDebitur, setNamaDebitur] = useState('');
   const [tanggalAkad, setTanggalAkad] = useState('');
   const [produkKpr, setProdukKpr] = useState('');
   
-  // Plafond
+  // Plafond (Single Mode)
   const [modePlafond, setModePlafond] = useState('Standar (1 Baris)');
   const [plafondStandar, setPlafondStandar] = useState('');
   const [topUpVal, setTopUpVal] = useState('0');
   
-  // Spesifik Bank
+  // Spesifik Bank (Single Mode)
   const [uobSalesName, setUobSalesName] = useState('');
   const [uobKomisiPaid, setUobKomisiPaid] = useState(false);
   const [permataDiskon, setPermataDiskon] = useState(false);
   const [permataPersen, setPermataPersen] = useState('');
 
-  // Komisi & Penutup
+  // Komisi & Penutup (Single Mode)
   const [komisiPreset, setKomisiPreset] = useState('Template Utama (Bullet Point Rapi)');
   const [komisiText, setKomisiText] = useState('');
   const [penutupPreset, setPenutupPreset] = useState('Template Standar');
   const [penutupText, setPenutupText] = useState('');
 
-  // Batch Mode State
+  // -------------------------------------------------------------
+  // BATCH MODE STATE
+  // -------------------------------------------------------------
   const [selectedBatchIds, setSelectedBatchIds] = useState([]);
+  const [activeBatchLeadId, setActiveBatchLeadId] = useState(null);
   const [batchSearch, setBatchSearch] = useState('');
   const [batchBankFilter, setBatchBankFilter] = useState('');
-  const [batchFormatBtnMap, setBatchFormatBtnMap] = useState({}); // bankKey -> 'sp3k' | 'normal'
+  // Map of per-lead custom edits: leadId -> { name, date, product, plafond, topUp, modePlafond, formatLaporan }
+  const [batchLeadEdits, setBatchLeadEdits] = useState({});
+  // Map of per-bank custom edits: bankName -> { to, from, selectedCc, customCc, waktuSalam, panggilan, namaPenerima, formatLaporan, komisiPreset, komisiText, penutupPreset, penutupText }
+  const [batchBankEdits, setBatchBankEdits] = useState({});
 
   const fetchData = () => {
     setLoading(true);
@@ -107,6 +113,9 @@ export default function Leads() {
     return { name: '-- Ketik Manual / Kosongkan --', email: '' };
   };
 
+  // -------------------------------------------------------------
+  // SINGLE MODE HANDLERS
+  // -------------------------------------------------------------
   const handleLeadChange = (selectedOption) => {
     const id = selectedOption ? selectedOption.value : '';
     setSelectedLeadId(id);
@@ -290,7 +299,7 @@ export default function Leads() {
     let finalCc = [...selectedCc];
     if (customCc) finalCc = finalCc.concat(customCc.split(',').map(s => s.trim()).filter(s => s));
 
-    // 1. Save Log
+    // Save Log
     setSending(true);
     fetch('/api/logs', {
       method: 'POST',
@@ -316,7 +325,7 @@ export default function Leads() {
     .catch(err => console.error('Error saving log:', err))
     .finally(() => setSending(false));
 
-    // 2. Open Gmail Web Compose Window
+    // Open Gmail
     const gmailUrl = new URL('https://mail.google.com/mail/?view=cm&fs=1');
     if (emailTo) gmailUrl.searchParams.append('to', emailTo);
     if (finalCc.length > 0) gmailUrl.searchParams.append('cc', finalCc.join(', '));
@@ -334,7 +343,7 @@ export default function Leads() {
   };
 
   // -------------------------------------------------------------
-  // BATCH MODE LOGIC
+  // BATCH MODE LOGIC & EDITORS
   // -------------------------------------------------------------
   const uniqueBanks = Array.from(new Set(leads.map(l => l.bank).filter(Boolean)));
 
@@ -349,9 +358,17 @@ export default function Leads() {
 
   const toggleBatchLead = (leadId) => {
     if (selectedBatchIds.includes(leadId)) {
-      setSelectedBatchIds(selectedBatchIds.filter(id => id !== leadId));
+      const nextIds = selectedBatchIds.filter(id => id !== leadId);
+      setSelectedBatchIds(nextIds);
+      if (activeBatchLeadId === leadId) {
+        setActiveBatchLeadId(nextIds.length > 0 ? nextIds[0] : null);
+      }
     } else {
-      setSelectedBatchIds([...selectedBatchIds, leadId]);
+      const nextIds = [...selectedBatchIds, leadId];
+      setSelectedBatchIds(nextIds);
+      if (!activeBatchLeadId) {
+        setActiveBatchLeadId(leadId);
+      }
     }
   };
 
@@ -360,12 +377,82 @@ export default function Leads() {
     const allSelected = visibleIds.every(id => selectedBatchIds.includes(id));
     if (allSelected) {
       setSelectedBatchIds(selectedBatchIds.filter(id => !visibleIds.includes(id)));
+      setActiveBatchLeadId(null);
     } else {
-      setSelectedBatchIds(Array.from(new Set([...selectedBatchIds, ...visibleIds])));
+      const nextIds = Array.from(new Set([...selectedBatchIds, ...visibleIds]));
+      setSelectedBatchIds(nextIds);
+      if (!activeBatchLeadId && nextIds.length > 0) {
+        setActiveBatchLeadId(nextIds[0]);
+      }
     }
   };
 
-  // Compile Grouped Drafts
+  // Helper to read effective values for a lead in Batch Mode
+  const getBatchLeadData = (lead) => {
+    const edit = batchLeadEdits[lead.id] || {};
+    const isBtn = lead.bank.toUpperCase().includes('BTN');
+    return {
+      id: lead.id,
+      row_number: lead.row_number,
+      bank: lead.bank,
+      platform: lead.platform || 'Rumah123',
+      name: edit.name !== undefined ? edit.name : lead.name,
+      date: edit.date !== undefined ? edit.date : lead.date,
+      product: edit.product !== undefined ? edit.product : lead.product,
+      plafond: edit.plafond !== undefined ? edit.plafond : lead.plafond,
+      topUp: edit.topUp !== undefined ? edit.topUp : '0',
+      modePlafond: edit.modePlafond !== undefined ? edit.modePlafond : 'Standar (1 Baris)',
+      formatLaporan: edit.formatLaporan !== undefined ? edit.formatLaporan : (isBtn ? 'Format SP3K (Khusus BTN)' : 'Vertikal Ke Bawah (Komplit)')
+    };
+  };
+
+  const updateActiveBatchLeadField = (field, val) => {
+    if (!activeBatchLeadId) return;
+    const current = batchLeadEdits[activeBatchLeadId] || {};
+    setBatchLeadEdits({
+      ...batchLeadEdits,
+      [activeBatchLeadId]: { ...current, [field]: val }
+    });
+  };
+
+  // Helper to read effective bank group settings in Batch Mode
+  const getBatchBankData = (bankName) => {
+    const edit = batchBankEdits[bankName] || {};
+    const defaultMatch = findMatchingBankEmail(bankName);
+    const isBtn = bankName.toUpperCase().includes('BTN');
+    
+    let defaultPenutup = 'Template Standar';
+    let defaultPenutupText = "Mohon dibantu konfirmasi apabila transaksi tersebut sudah benar. Terima kasih.";
+    if (isBtn) {
+      defaultPenutup = 'Template Otomatis Bank BTN';
+      defaultPenutupText = "Mohon dibantu konfirmasi apabila SP3K Dan Transaksi tersebut sudah benar. Terima kasih.";
+    }
+
+    return {
+      to: edit.to !== undefined ? edit.to : defaultMatch.email,
+      from: edit.from !== undefined ? edit.from : 'akun.kantor@99.co',
+      selectedCc: edit.selectedCc !== undefined ? edit.selectedCc : [],
+      customCc: edit.customCc !== undefined ? edit.customCc : '',
+      waktuSalam: edit.waktuSalam !== undefined ? edit.waktuSalam : waktuSalam,
+      panggilan: edit.panggilan !== undefined ? edit.panggilan : 'Bapak',
+      namaPenerima: edit.namaPenerima !== undefined ? edit.namaPenerima : '',
+      formatGroup: edit.formatGroup !== undefined ? edit.formatGroup : (isBtn ? 'Format SP3K (Khusus BTN)' : 'Vertikal Ke Bawah (Komplit)'),
+      komisiPreset: edit.komisiPreset !== undefined ? edit.komisiPreset : 'Template Utama (Bullet Point Rapi)',
+      komisiText: edit.komisiText !== undefined ? edit.komisiText : "Mohon informasinya juga mengenai komisi KPR:\n- Apakah komisi dibayarkan sesuai 1% dari nilai plafond?\n- Atau terdapat penyesuaian dikarenakan permohonan diskon / program khusus dari pihak bank?",
+      penutupPreset: edit.penutupPreset !== undefined ? edit.penutupPreset : defaultPenutup,
+      penutupText: edit.penutupText !== undefined ? edit.penutupText : defaultPenutupText
+    };
+  };
+
+  const updateBatchBankField = (bankName, field, val) => {
+    const current = batchBankEdits[bankName] || {};
+    setBatchBankEdits({
+      ...batchBankEdits,
+      [bankName]: { ...current, [field]: val }
+    });
+  };
+
+  // Grouping selected leads by bank
   const selectedBatchLeads = leads.filter(l => selectedBatchIds.includes(l.id));
   const batchGroups = {};
   selectedBatchLeads.forEach(lead => {
@@ -374,50 +461,72 @@ export default function Leads() {
     batchGroups[b].push(lead);
   });
 
-  const generateBatchEmailForGroup = (bankName, groupLeads) => {
-    const isBtn = bankName.toUpperCase().includes('BTN');
-    const chosenFormat = batchFormatBtnMap[bankName] || (isBtn ? 'sp3k' : 'normal');
-    const platform = groupLeads[0]?.platform || 'Rumah123';
+  const activeBatchLead = selectedBatchLeads.find(l => l.id === activeBatchLeadId) || selectedBatchLeads[0] || null;
+  const activeBatchLeadEffective = activeBatchLead ? getBatchLeadData(activeBatchLead) : null;
+  const activeBatchBankEffective = activeBatchLead ? getBatchBankData(activeBatchLead.bank) : null;
+
+  // Compile Grouped Email
+  const generateBatchEmailForGroup = (bankName, groupRawLeads) => {
+    const bankData = getBatchBankData(bankName);
+    const effectiveLeads = groupRawLeads.map(l => getBatchLeadData(l));
+    const platform = effectiveLeads[0]?.platform || 'Rumah123';
     
-    let subject = (isBtn && chosenFormat === 'sp3k')
+    const isSp3k = bankData.formatGroup === 'Format SP3K (Khusus BTN)';
+    let subject = isSp3k
       ? `Konfirmasi plafond akad dan SP3K ${platform} - ${bankName}`
       : `Konfirmasi plafond akad ${platform} - ${bankName}`;
 
-    let salam = waktuSalam !== 'Tanpa Salam' ? `${waktuSalam},\n\n` : '';
+    let salam = '';
+    if (bankData.waktuSalam !== 'Tanpa Salam') {
+      salam = `${bankData.waktuSalam}${bankData.panggilan !== 'Tanpa Panggilan' ? ' ' + bankData.panggilan : ''}${bankData.namaPenerima ? ' ' + bankData.namaPenerima : ''},\n\n`;
+    }
+
     let pengantar = `Di bawah ini adalah transaksi leads KPR referral ${platform} yang sudah akad di Bank ${bankName}:`;
 
     let detailData = '';
-    if (isBtn && chosenFormat === 'sp3k') {
-      detailData = groupLeads.map(l => `Nama Debitur : ${l.name}`).join('\n\n');
+    if (isSp3k) {
+      detailData = effectiveLeads.map(l => `Nama Debitur : ${l.name}`).join('\n\n');
+    } else if (bankData.formatGroup === 'Satu Baris (Simpel)') {
+      detailData = effectiveLeads.map((l, i) => `${i + 1}. ${l.name}   ${l.date || '-'}   - ${l.plafond || '-'}`).join('\n');
     } else {
-      detailData = groupLeads.map((l, i) => `${i + 1}. ${l.name}   ${l.date || '-'}   - ${l.plafond || '-'}`).join('\n');
+      // Vertikal Ke Bawah (Komplit) for multiple leads
+      detailData = effectiveLeads.map(l => {
+        let pfStr = `Plafond      : ${l.plafond}`;
+        if (l.modePlafond === 'Pecah Take Over + Top Up (3 Baris)') {
+          const totalAwal = parseNumeric(l.plafond);
+          const tu = parseNumeric(l.topUp);
+          const to = totalAwal - tu;
+          pfStr = `Plafond Take Over : ${formatIdr(to)}.-\nPlafond Top Up    : ${formatIdr(tu)}.-\nTotal Plafond     : ${formatIdr(totalAwal)}.-`;
+        }
+        return `Nama Debitur : ${l.name}\n${pfStr}\nProduct      : ${l.product}\nTgl Akad     : ${l.date}`;
+      }).join('\n\n');
     }
 
-    let penutup = (isBtn && chosenFormat === 'sp3k')
-      ? 'Mohon dibantu konfirmasi apabila SP3K Dan Transaksi tersebut sudah benar. Terima kasih.'
-      : 'Mohon dibantu konfirmasi apabila transaksi tersebut sudah benar. Terima kasih.';
+    let penutupFinal = bankData.penutupText.trim();
+    if (!isSp3k && bankData.komisiText.trim() && !penutupFinal.includes(bankData.komisiText.trim())) {
+      penutupFinal += `\n\n${bankData.komisiText.trim()}`;
+    }
 
-    const body = `${salam}${pengantar}\n\n${detailData}\n\n${penutup}`;
-    const match = findMatchingBankEmail(bankName);
+    const body = `${salam}${pengantar}\n\n${detailData}\n\n${penutupFinal}`;
 
     return {
       bankName,
       subject,
       body,
-      to: match.email,
-      from: emailFrom,
-      leads: groupLeads,
-      isBtn,
-      chosenFormat
+      to: bankData.to,
+      from: bankData.from,
+      selectedCc: bankData.selectedCc,
+      customCc: bankData.customCc,
+      effectiveLeads
     };
   };
 
   const handleOpenSingleBatchDraft = (draft) => {
-    let finalCc = [...selectedCc];
-    if (customCc) finalCc = finalCc.concat(customCc.split(',').map(s => s.trim()).filter(s => s));
+    let finalCc = [...draft.selectedCc];
+    if (draft.customCc) finalCc = finalCc.concat(draft.customCc.split(',').map(s => s.trim()).filter(s => s));
 
     // Save logs for each lead in group
-    draft.leads.forEach(lead => {
+    draft.effectiveLeads.forEach(lead => {
       fetch('/api/logs', {
         method: 'POST',
         headers: { 
@@ -463,7 +572,7 @@ export default function Leads() {
       setTimeout(() => {
         const draft = generateBatchEmailForGroup(bankName, batchGroups[bankName]);
         handleOpenSingleBatchDraft(draft);
-      }, index * 400); // slight delay to avoid browser popup blocks
+      }, index * 400);
     });
   };
 
@@ -540,7 +649,9 @@ export default function Leads() {
         {/* ======================================================== */}
         <div>
           {modeSelect === 'single' ? (
-            /* SINGLE MODE CONTROLS */
+            /* ==================================================== */
+            /* SINGLE MODE CONTROLS: ALWAYS 100% COMPLETE FORM      */
+            /* ==================================================== */
             <>
               <div className="card" style={{ padding: '20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
@@ -584,7 +695,7 @@ export default function Leads() {
               {selectedLead && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '20px' }}>
                   
-                  {/* Kontak & Tujuan Email */}
+                  {/* 2. Kontak & Tujuan Email */}
                   <div className="card" style={{ padding: '20px' }}>
                     <div className="card-title" style={{ fontSize: '14px', color: '#2b70f0' }}>2. Kontak & Tujuan Email</div>
                     
@@ -621,7 +732,7 @@ export default function Leads() {
                     </div>
                   </div>
 
-                  {/* Data Akad & Plafond */}
+                  {/* 3. Data Akad & Format (ALWAYS FULLY COMPLETE) */}
                   <div className="card" style={{ padding: '20px' }}>
                     <div className="card-title" style={{ fontSize: '14px', color: '#2b70f0' }}>3. Data Akad & Format</div>
                     
@@ -634,67 +745,54 @@ export default function Leads() {
                           <option>Format SP3K (Khusus BTN)</option>
                         </select>
                       </div>
-                      {formatLaporan !== 'Format SP3K (Khusus BTN)' && (
-                        <div className="form-group flex-1">
-                          <label className="form-label">Pecah Top Up?</label>
-                          <select className="form-select" value={modePlafond} onChange={e => setModePlafond(e.target.value)}>
-                            <option>Standar (1 Baris)</option>
-                            <option>Pecah Take Over + Top Up (3 Baris)</option>
-                          </select>
-                        </div>
-                      )}
+                      <div className="form-group flex-1">
+                        <label className="form-label">Pecah Top Up?</label>
+                        <select className="form-select" value={modePlafond} onChange={e => setModePlafond(e.target.value)}>
+                          <option>Standar (1 Baris)</option>
+                          <option>Pecah Take Over + Top Up (3 Baris)</option>
+                        </select>
+                      </div>
                     </div>
 
-                    {formatLaporan === 'Format SP3K (Khusus BTN)' ? (
-                      <div style={{ background: '#eff6ff', padding: '12px 16px', borderRadius: '8px', border: '1px solid #bfdbfe', marginBottom: '16px' }}>
-                        <div style={{ fontSize: '13px', fontWeight: '600', color: '#1d4ed8', marginBottom: '4px' }}>
-                          ⚡ Format Khusus SP3K Bank BTN Aktif
+                    {formatLaporan === 'Format SP3K (Khusus BTN)' && (
+                      <div style={{ background: '#eff6ff', padding: '10px 14px', borderRadius: '6px', border: '1px solid #bfdbfe', marginBottom: '14px', fontSize: '12px', color: '#1d4ed8' }}>
+                        ℹ️ <strong>Mode SP3K Aktif:</strong> Di draf email hanya mencantumkan nama debitur (lampirkan file SP3K di tab Gmail). Namun semua data di bawah tetap lengkap dan dapat kamu edit.
+                      </div>
+                    )}
+
+                    <div className="flex-row" style={{ marginBottom: '12px' }}>
+                      <div className="form-group flex-1">
+                        <label className="form-label">Nama Nasabah</label>
+                        <input className="form-input" value={namaDebitur} onChange={e=>setNamaDebitur(e.target.value)}/>
+                      </div>
+                      <div className="form-group flex-1">
+                        <label className="form-label">Tgl Akad</label>
+                        <input className="form-input" value={tanggalAkad} onChange={e=>setTanggalAkad(e.target.value)}/>
+                      </div>
+                    </div>
+
+                    {modePlafond === 'Standar (1 Baris)' ? (
+                      <div className="flex-row" style={{ marginBottom: '12px' }}>
+                        <div className="form-group flex-1">
+                          <label className="form-label">Product KPR</label>
+                          <input className="form-input" value={produkKpr} onChange={e=>setProdukKpr(e.target.value)} />
                         </div>
-                        <div style={{ fontSize: '12px', color: '#3b82f6' }}>
-                          Hanya menampilkan Nama Debitur tanpa rincian nominal plafond. Lampirkan file PDF SP3K langsung di tab Gmail.
-                        </div>
-                        <div className="form-group" style={{ marginTop: '12px', marginBottom: 0 }}>
-                          <label className="form-label">Nama Debitur</label>
-                          <input className="form-input" value={namaDebitur} onChange={e=>setNamaDebitur(e.target.value)}/>
+                        <div className="form-group flex-1">
+                          <label className="form-label">Total Plafond</label>
+                          <input className="form-input" value={plafondStandar} onChange={e=>setPlafondStandar(e.target.value)} />
                         </div>
                       </div>
                     ) : (
-                      <>
-                        <div className="flex-row" style={{ marginBottom: '12px' }}>
-                          <div className="form-group flex-1">
-                            <label className="form-label">Nama Nasabah</label>
-                            <input className="form-input" value={namaDebitur} onChange={e=>setNamaDebitur(e.target.value)}/>
-                          </div>
-                          <div className="form-group flex-1">
-                            <label className="form-label">Tgl Akad</label>
-                            <input className="form-input" value={tanggalAkad} onChange={e=>setTanggalAkad(e.target.value)}/>
-                          </div>
+                      <div className="flex-row" style={{ marginBottom: '12px' }}>
+                        <div className="form-group flex-1">
+                          <label className="form-label">Product KPR</label>
+                          <input className="form-input" value={produkKpr} onChange={e=>setProdukKpr(e.target.value)} />
                         </div>
-
-                        {modePlafond === 'Standar (1 Baris)' ? (
-                          <div className="flex-row" style={{ marginBottom: '12px' }}>
-                            <div className="form-group flex-1">
-                              <label className="form-label">Product KPR</label>
-                              <input className="form-input" value={produkKpr} onChange={e=>setProdukKpr(e.target.value)} />
-                            </div>
-                            <div className="form-group flex-1">
-                              <label className="form-label">Total Plafond</label>
-                              <input className="form-input" value={plafondStandar} onChange={e=>setPlafondStandar(e.target.value)} />
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="flex-row" style={{ marginBottom: '12px' }}>
-                            <div className="form-group flex-1">
-                              <label className="form-label">Product KPR</label>
-                              <input className="form-input" value={produkKpr} onChange={e=>setProdukKpr(e.target.value)} />
-                            </div>
-                            <div className="form-group flex-1">
-                              <label className="form-label">Nominal Top Up (Dari Total: {selectedLead.plafond})</label>
-                              <input className="form-input" value={topUpVal} onChange={e=>setTopUpVal(e.target.value)} placeholder="Ketik angka top up saja" />
-                            </div>
-                          </div>
-                        )}
-                      </>
+                        <div className="form-group flex-1">
+                          <label className="form-label">Nominal Top Up (Dari Total: {selectedLead.plafond})</label>
+                          <input className="form-input" value={topUpVal} onChange={e=>setTopUpVal(e.target.value)} placeholder="Ketik angka top up saja" />
+                        </div>
+                      </div>
                     )}
 
                     {/* Bank Specific Tweaks */}
@@ -724,7 +822,7 @@ export default function Leads() {
                     )}
                   </div>
 
-                  {/* Konfirmasi Email */}
+                  {/* 4. Salam & Penutup (ALWAYS FULLY COMPLETE) */}
                   <div className="card" style={{ padding: '20px' }}>
                     <div className="card-title" style={{ fontSize: '14px', color: '#2b70f0' }}>4. Salam & Penutup</div>
                     <div className="flex-row" style={{ marginBottom: '16px' }}>
@@ -742,18 +840,16 @@ export default function Leads() {
                       </div>
                     </div>
 
-                    {formatLaporan !== 'Format SP3K (Khusus BTN)' && (
-                      <div className="flex-row" style={{ marginBottom: '16px' }}>
-                        <div className="form-group flex-1">
-                          <label className="form-label">Template Paragraf Komisi</label>
-                          <select className="form-select" value={komisiPreset} onChange={handleKomisiChange} style={{ marginBottom: '8px' }}>
-                            <option>Template Utama (Bullet Point Rapi)</option><option>Kosong / Ketik Manual</option>
-                            {komisiSettings.map((s, i) => <option key={i} value={s['Nama Template']}>{s['Nama Template']}</option>)}
-                          </select>
-                          <textarea className="form-textarea" rows="2" value={komisiText} onChange={e=>setKomisiText(e.target.value)} />
-                        </div>
+                    <div className="flex-row" style={{ marginBottom: '16px' }}>
+                      <div className="form-group flex-1">
+                        <label className="form-label">Template Paragraf Komisi</label>
+                        <select className="form-select" value={komisiPreset} onChange={handleKomisiChange} style={{ marginBottom: '8px' }}>
+                          <option>Template Utama (Bullet Point Rapi)</option><option>Kosong / Ketik Manual</option>
+                          {komisiSettings.map((s, i) => <option key={i} value={s['Nama Template']}>{s['Nama Template']}</option>)}
+                        </select>
+                        <textarea className="form-textarea" rows="2" value={komisiText} onChange={e=>setKomisiText(e.target.value)} />
                       </div>
-                    )}
+                    </div>
 
                     <div className="flex-row">
                       <div className="form-group flex-1">
@@ -773,12 +869,16 @@ export default function Leads() {
               )}
             </>
           ) : (
-            /* BATCH MODE CONTROLS */
+            /* ==================================================== */
+            /* BATCH MODE CONTROLS: LIST + FULL INSPECTOR EDITORS  */
+            /* ==================================================== */
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              
+              {/* Checklist Selection Card */}
               <div className="card" style={{ padding: '20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                   <div className="card-title" style={{ fontSize: '15px', color: '#2b70f0', margin: 0 }}>
-                    Pilih Nasabah (Centang)
+                    1. Pilih Nasabah (Centang)
                   </div>
                   <button 
                     onClick={fetchData} 
@@ -833,7 +933,7 @@ export default function Leads() {
 
                 {/* Scrollable Leads List */}
                 <div style={{ 
-                  maxHeight: '480px', 
+                  maxHeight: '260px', 
                   overflowY: 'auto', 
                   border: '1px solid #e5e7eb', 
                   borderRadius: '8px',
@@ -852,7 +952,7 @@ export default function Leads() {
                           key={lead.id}
                           onClick={() => toggleBatchLead(lead.id)}
                           style={{
-                            padding: '12px 14px',
+                            padding: '10px 14px',
                             display: 'flex',
                             alignItems: 'center',
                             gap: '12px',
@@ -865,18 +965,18 @@ export default function Leads() {
                           <input 
                             type="checkbox" 
                             checked={isSelected}
-                            onChange={() => {}} // handled by parent div
+                            onChange={() => {}}
                             style={{ cursor: 'pointer', width: '16px', height: '16px' }}
                           />
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
-                              <span style={{ fontWeight: '600', fontSize: '14px', color: '#111827' }}>
+                              <span style={{ fontWeight: '600', fontSize: '13px', color: '#111827' }}>
                                 {lead.name}
                               </span>
                               <span style={{ 
                                 fontSize: '11px', 
-                                padding: '2px 8px', 
-                                borderRadius: '12px', 
+                                padding: '1px 6px', 
+                                borderRadius: '10px', 
                                 fontWeight: 'bold',
                                 background: isBtn ? '#dbeafe' : '#f3f4f6',
                                 color: isBtn ? '#1d4ed8' : '#4b5563',
@@ -885,7 +985,7 @@ export default function Leads() {
                                 {lead.bank}
                               </span>
                             </div>
-                            <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                            <div style={{ fontSize: '11px', color: '#6b7280' }}>
                               Akad: {lead.date || '-'} &bull; Plafond: {lead.plafond || '-'}
                             </div>
                           </div>
@@ -897,26 +997,255 @@ export default function Leads() {
 
               </div>
 
-              {/* Salam Global for Batch */}
-              <div className="card" style={{ padding: '20px' }}>
-                <div className="card-title" style={{ fontSize: '14px', color: '#2b70f0', marginBottom: '12px' }}>
-                  Format Salam Pembuka (Semua Draft)
+              {/* FULL EDITORS FOR SELECTED BATCH LEADS */}
+              {selectedBatchLeads.length > 0 && activeBatchLeadEffective && activeBatchBankEffective && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  
+                  {/* Selector Pills: Which lead is currently being edited */}
+                  <div className="card" style={{ padding: '16px 20px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                    <div style={{ fontSize: '13px', fontWeight: '600', color: '#334155', marginBottom: '10px' }}>
+                      ✏️ Pilih Nasabah untuk Diedit Komplit:
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                      {selectedBatchLeads.map(l => {
+                        const isActive = l.id === activeBatchLeadEffective.id;
+                        return (
+                          <button
+                            key={l.id}
+                            onClick={() => setActiveBatchLeadId(l.id)}
+                            style={{
+                              padding: '6px 14px',
+                              borderRadius: '20px',
+                              border: isActive ? '1px solid #2b70f0' : '1px solid #cbd5e1',
+                              background: isActive ? '#2b70f0' : 'white',
+                              color: isActive ? 'white' : '#334155',
+                              fontSize: '12px',
+                              fontWeight: '600',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              transition: 'all 0.15s'
+                            }}
+                          >
+                            <span>👤 {l.name}</span>
+                            <span style={{ 
+                              fontSize: '10px', 
+                              opacity: 0.85, 
+                              background: isActive ? 'rgba(255,255,255,0.2)' : '#f1f5f9',
+                              padding: '1px 5px',
+                              borderRadius: '8px'
+                            }}>
+                              {l.bank}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* 2. Kontak & Tujuan Email for Active Lead's Bank */}
+                  <div className="card" style={{ padding: '20px' }}>
+                    <div className="card-title" style={{ fontSize: '14px', color: '#2b70f0' }}>
+                      2. Kontak Email (Bank {activeBatchLeadEffective.bank})
+                    </div>
+                    
+                    <div className="flex-row" style={{ marginBottom: '16px' }}>
+                      <div className="form-group flex-1">
+                        <label className="form-label">PIC Bank (To)</label>
+                        <input 
+                          className="form-input" 
+                          value={activeBatchBankEffective.to} 
+                          onChange={e => updateBatchBankField(activeBatchLeadEffective.bank, 'to', e.target.value)} 
+                          placeholder="email.bank@domain.com" 
+                        />
+                      </div>
+                      <div className="form-group flex-1">
+                        <label className="form-label">Pengirim (From)</label>
+                        <input 
+                          className="form-input" 
+                          value={activeBatchBankEffective.from} 
+                          onChange={e => updateBatchBankField(activeBatchLeadEffective.bank, 'from', e.target.value)} 
+                          placeholder="email.pengirim@domain.com" 
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">Tambahan CC (pisahkan koma)</label>
+                      <input 
+                        className="form-input" 
+                        value={activeBatchBankEffective.customCc} 
+                        onChange={e => updateBatchBankField(activeBatchLeadEffective.bank, 'customCc', e.target.value)} 
+                        placeholder="cc1@bank.com, cc2@bank.com" 
+                      />
+                    </div>
+                  </div>
+
+                  {/* 3. Data Akad & Format for Active Lead (FULL EDIT KOMPLIT) */}
+                  <div className="card" style={{ padding: '20px' }}>
+                    <div className="card-title" style={{ fontSize: '14px', color: '#2b70f0' }}>
+                      3. Data Akad & Format ({activeBatchLeadEffective.name})
+                    </div>
+                    
+                    <div className="flex-row" style={{ marginBottom: '16px' }}>
+                      <div className="form-group flex-1">
+                        <label className="form-label">Format Penulisan Email Bank {activeBatchLeadEffective.bank}</label>
+                        <select 
+                          className="form-select" 
+                          value={activeBatchBankEffective.formatGroup} 
+                          onChange={e => updateBatchBankField(activeBatchLeadEffective.bank, 'formatGroup', e.target.value)}
+                        >
+                          <option>Vertikal Ke Bawah (Komplit)</option>
+                          <option>Satu Baris (Simpel)</option>
+                          <option>Format SP3K (Khusus BTN)</option>
+                        </select>
+                      </div>
+                      <div className="form-group flex-1">
+                        <label className="form-label">Pecah Top Up?</label>
+                        <select 
+                          className="form-select" 
+                          value={activeBatchLeadEffective.modePlafond} 
+                          onChange={e => updateActiveBatchLeadField('modePlafond', e.target.value)}
+                        >
+                          <option>Standar (1 Baris)</option>
+                          <option>Pecah Take Over + Top Up (3 Baris)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="flex-row" style={{ marginBottom: '12px' }}>
+                      <div className="form-group flex-1">
+                        <label className="form-label">Nama Nasabah</label>
+                        <input 
+                          className="form-input" 
+                          value={activeBatchLeadEffective.name} 
+                          onChange={e => updateActiveBatchLeadField('name', e.target.value)}
+                        />
+                      </div>
+                      <div className="form-group flex-1">
+                        <label className="form-label">Tgl Akad</label>
+                        <input 
+                          className="form-input" 
+                          value={activeBatchLeadEffective.date} 
+                          onChange={e => updateActiveBatchLeadField('date', e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    {activeBatchLeadEffective.modePlafond === 'Standar (1 Baris)' ? (
+                      <div className="flex-row" style={{ marginBottom: '12px' }}>
+                        <div className="form-group flex-1">
+                          <label className="form-label">Product KPR</label>
+                          <input 
+                            className="form-input" 
+                            value={activeBatchLeadEffective.product} 
+                            onChange={e => updateActiveBatchLeadField('product', e.target.value)} 
+                          />
+                        </div>
+                        <div className="form-group flex-1">
+                          <label className="form-label">Total Plafond</label>
+                          <input 
+                            className="form-input" 
+                            value={activeBatchLeadEffective.plafond} 
+                            onChange={e => updateActiveBatchLeadField('plafond', e.target.value)} 
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex-row" style={{ marginBottom: '12px' }}>
+                        <div className="form-group flex-1">
+                          <label className="form-label">Product KPR</label>
+                          <input 
+                            className="form-input" 
+                            value={activeBatchLeadEffective.product} 
+                            onChange={e => updateActiveBatchLeadField('product', e.target.value)} 
+                          />
+                        </div>
+                        <div className="form-group flex-1">
+                          <label className="form-label">Nominal Top Up</label>
+                          <input 
+                            className="form-input" 
+                            value={activeBatchLeadEffective.topUp} 
+                            onChange={e => updateActiveBatchLeadField('topUp', e.target.value)} 
+                            placeholder="Ketik angka top up saja" 
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 4. Salam & Penutup for Bank (FULL EDIT KOMPLIT) */}
+                  <div className="card" style={{ padding: '20px' }}>
+                    <div className="card-title" style={{ fontSize: '14px', color: '#2b70f0' }}>
+                      4. Salam & Penutup (Bank {activeBatchLeadEffective.bank})
+                    </div>
+                    
+                    <div className="flex-row" style={{ marginBottom: '16px' }}>
+                      <div className="form-group flex-1">
+                        <label className="form-label">Salam Pembuka</label>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <select 
+                            className="form-select" 
+                            value={activeBatchBankEffective.waktuSalam} 
+                            onChange={e => updateBatchBankField(activeBatchLeadEffective.bank, 'waktuSalam', e.target.value)} 
+                            style={{ width: '40%' }}
+                          >
+                            <option>Selamat pagi</option><option>Selamat siang</option><option>Selamat sore</option><option>Tanpa Salam</option>
+                          </select>
+                          <select 
+                            className="form-select" 
+                            value={activeBatchBankEffective.panggilan} 
+                            onChange={e => updateBatchBankField(activeBatchLeadEffective.bank, 'panggilan', e.target.value)} 
+                            style={{ width: '30%' }}
+                          >
+                            <option>Bapak</option><option>Ibu</option><option>Tanpa Panggilan</option>
+                          </select>
+                          <input 
+                            className="form-input" 
+                            style={{ width: '30%' }} 
+                            value={activeBatchBankEffective.namaPenerima} 
+                            onChange={e => updateBatchBankField(activeBatchLeadEffective.bank, 'namaPenerima', e.target.value)} 
+                            placeholder="Nama" 
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex-row" style={{ marginBottom: '16px' }}>
+                      <div className="form-group flex-1">
+                        <label className="form-label">Template Paragraf Komisi</label>
+                        <textarea 
+                          className="form-textarea" 
+                          rows="2" 
+                          value={activeBatchBankEffective.komisiText} 
+                          onChange={e => updateBatchBankField(activeBatchLeadEffective.bank, 'komisiText', e.target.value)} 
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex-row">
+                      <div className="form-group flex-1">
+                        <label className="form-label">Kalimat Penutup</label>
+                        <textarea 
+                          className="form-textarea" 
+                          rows="2" 
+                          value={activeBatchBankEffective.penutupText} 
+                          onChange={e => updateBatchBankField(activeBatchLeadEffective.bank, 'penutupText', e.target.value)} 
+                        />
+                      </div>
+                    </div>
+                  </div>
+
                 </div>
-                <div style={{ display: 'flex', gap: '12px' }}>
-                  <select className="form-select" value={waktuSalam} onChange={e => setWaktuSalam(e.target.value)} style={{ flex: 1 }}>
-                    <option>Selamat pagi</option>
-                    <option>Selamat siang</option>
-                    <option>Selamat sore</option>
-                    <option>Tanpa Salam</option>
-                  </select>
-                </div>
-              </div>
+              )}
+
             </div>
           )}
         </div>
 
         {/* ======================================================== */}
-        {/* RIGHT COLUMN: PREVIEW & LAUNCHER */}
+        {/* RIGHT COLUMN: PREVIEWS & ACTIONS */}
         {/* ======================================================== */}
         <div>
           {modeSelect === 'single' ? (
@@ -1055,8 +1384,8 @@ export default function Leads() {
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                   {Object.keys(batchGroups).map((bankName) => {
-                    const groupLeads = batchGroups[bankName];
-                    const draft = generateBatchEmailForGroup(bankName, groupLeads);
+                    const groupRawLeads = batchGroups[bankName];
+                    const draft = generateBatchEmailForGroup(bankName, groupRawLeads);
 
                     return (
                       <div key={bankName} className="card" style={{ padding: '20px', border: '1px solid #e5e7eb' }}>
@@ -1071,27 +1400,9 @@ export default function Leads() {
                               Bank {bankName}
                             </span>
                             <span style={{ fontSize: '13px', color: '#6b7280', fontWeight: '500' }}>
-                              {groupLeads.length} nasabah
+                              {groupRawLeads.length} nasabah
                             </span>
                           </div>
-
-                          {/* If BTN, toggle between SP3K and Normal */}
-                          {draft.isBtn && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
-                              <span style={{ color: '#4b5563' }}>Format:</span>
-                              <select 
-                                value={draft.chosenFormat}
-                                onChange={(e) => setBatchFormatBtnMap({ ...batchFormatBtnMap, [bankName]: e.target.value })}
-                                style={{ 
-                                  fontSize: '12px', padding: '4px 8px', borderRadius: '6px', 
-                                  border: '1px solid #d1d5db', background: '#eff6ff', color: '#1d4ed8', fontWeight: '600' 
-                                }}
-                              >
-                                <option value="sp3k">Format SP3K</option>
-                                <option value="normal">Format Normal (Plafond)</option>
-                              </select>
-                            </div>
-                          )}
                         </div>
 
                         {/* Meta Info */}
@@ -1100,7 +1411,7 @@ export default function Leads() {
                             <strong style={{ color: '#4b5563' }}>Subject:</strong> {draft.subject}
                           </div>
                           <div>
-                            <strong style={{ color: '#4b5563' }}>To:</strong> {draft.to || <span style={{ color: '#ef4444' }}>Belum diatur di Pengaturan</span>}
+                            <strong style={{ color: '#4b5563' }}>To:</strong> {draft.to || <span style={{ color: '#ef4444' }}>Belum diatur di Kontak</span>}
                           </div>
                         </div>
 
@@ -1115,7 +1426,7 @@ export default function Leads() {
                           padding: '12px 14px',
                           borderRadius: '6px',
                           border: '1px solid #f3f4f6',
-                          maxHeight: '220px',
+                          maxHeight: '260px',
                           overflowY: 'auto'
                         }}>
                           {draft.body}
